@@ -9,46 +9,16 @@ from PIL import Image
 from rich.logging import RichHandler
 import logging
 
+logging.basicConfig(
+    level="DEBUG",
+    format="%(message)s",
+    datefmt="[%X]",
+    handlers=[RichHandler()]
+)
 
-class Logger:
-    """
-   Custom logger class for rich logging
-     """
+log = logging.getLogger("rich")
 
-    def __init__(self, console) -> None:
-        logging.basicConfig(
-           format="%(message)s",
-            datefmt="[%X]",
-            level=logging.INFO,
-            handlers=[RichHandler(console=console, markup=True)]
-        )
 
-        RichHandler.KEYWORDS = ["[?]", "[✗]", "[⚠]", "[✓]"]
-        self.log: object = logging.getLogger("rich")
-
-    def logger(
-        self,
-        exception_: str,
-        message: str
-        ) -> None:
-        """
-        Logs a message to the console with a logging level
-        :param exception_: Exception type
-        :param message: Message to log
-        :return: None
-        """
-
-        match exception_:
-            case "info":
-                self.log.info(f"[?] {message}")      
-            case "error":
-                self.log.error(f"[✗]{message}")
-            case "warning":
-                self.log.warning(f"[⚠] {message}")
-            case "success":
-                self.log.success(f"[✓] {message}")
-
-logger = Logger(rich.get_console())
 class PySpace:
     """
     Class object containing methods that allow easy interaction with NASA API.
@@ -116,16 +86,18 @@ class PySpace:
         }
         if hd is not None:
             if not isinstance(hd, bool):
-                raise TypeError(logger.logger("error", "<hd> parameter must be a boolean"))
+                raise TypeError(log.error("<hd> parameter must be a boolean"))
 
         resp = requests.get(
             "https://api.nasa.gov/planetary/apod", params=params)
         if resp.status_code != 200:
-            logger.logger("error", f"Status Code: {resp.status_code} ({resp.reason})\nResponse: {resp.text}")
+            log.error(
+                f"Status Code: {resp.status_code} ({resp.reason})\nResponse: {resp.text}")
             raise requests.exceptions.HTTPError(resp.reason)
         else:
             self.limit_remaining = resp.headers["X-RateLimit-Remaining"]
-            logger.logger("success", f"Request completed\nStatus Code: {resp.status_code}\nResponse: {resp.text}\n\nResponse URL: {resp.url}")
+            log.info(
+                f"Request completed\nStatus Code: {resp.status_code}\nResponse: {resp.text}\n\nResponse URL: {resp.url}")
             return resp.json()
 
     def mars_picture(self, rover: str = "Curiosity", sol=None, earth_date: str = None, camera: str = "all", page=1):
@@ -166,9 +138,10 @@ class PySpace:
         }
         if rover.lower() not in ("curiosity", "opportunity", "spirit", "perseverance"):
             raise ValueError(
-                logger.logger("error", "Rover must be one of Curiosity, Opportunity, Spirit or Perseverance"))
+                log.error("Rover must be one of Curiosity, Opportunity, Spirit or Perseverance"))
         if earth_date != None and sol != None:
-            raise TypeError(logger.logger("error", "Both <sol> and <earth_date> cannot be specified"))
+            raise TypeError(
+                log.error("Both <sol> and <earth_date> cannot be specified"))
 
         if camera != "all":
             params["camera"] = camera
@@ -176,8 +149,8 @@ class PySpace:
             params["sol"] = sol
         if earth_date != None:
             if not isinstance(earth_date, (str, datetime.datetime)):
-                raise TypeError(
-                    "[Error] Earth date must be in YYYY-MM-DD format.")
+                raise TypeError(log.error(
+                    "Earth date must be in YYYY-MM-DD format."))
             elif isinstance(earth_date, datetime.datetime):
                 earth_date = earth_date.strftime("%Y-%m-%d")
             params["earth_date"] = earth_date
@@ -186,12 +159,13 @@ class PySpace:
             f"https://api.nasa.gov/mars-photos/api/v1/rovers/{rover}/photos", params=params)
 
         if resp.status_code != 200:
-            logger.logger("error", f"Status Code: {resp.status_code} ({resp.reason})\nResponse: {resp.text}")
-        
+            log.error(f"Status Code: {resp.status_code} ({resp.reason})\nResponse: {resp.text}")
+
             raise requests.exceptions.HTTPError(resp.reason)
         else:
             self.limit_remaining = resp.headers["X-RateLimit-Remaining"]
-            logger.logger("info", f"Request completed\nStatus Code: {resp.status_code}\nResponse: {resp.text}\n\nResponse URL: {resp.url}")
+            log.info(
+                f"Request completed\nStatus Code: {resp.status_code}\nResponse: {resp.text}\n\nResponse URL: {resp.url}")
             return resp.json()["photos"]
 
     def track_iss(self) -> dict[list[str], list[tuple[float, float]]]:
@@ -216,10 +190,12 @@ class PySpace:
             "people_on_board": list[str],
             "live_position": list[tuple[float, float]]
         }
-        resp = requests.get("http://api.open-notify.org/iss-now.json"), requests.get("http://api.open-notify.org/astros.json")
+        resp = requests.get("http://api.open-notify.org/iss-now.json"), requests.get(
+            "http://api.open-notify.org/astros.json")
         for response in resp:
             if response.status_code != 200:
-                logger.logger("error", f"Status Code: {response.status_code} ({response.reason})\nResponse: {response.text}")
+                log.error(
+                    f"Status Code: {response.status_code} ({response.reason})\nResponse: {response.text}")
                 raise requests.exceptions.HTTPError(response.reason)
 
         for person in resp[1].json()["people"]:
@@ -266,7 +242,7 @@ class PySpace:
             raise TypeError("API Version must be an integer or a float.")
 
         if resp.status_code != 200:
-            logger.logger("error", f"Status Code: {resp.status_code} ({resp.reason})\nResponse: {resp.text}")
+            log.error(f"Status Code: {resp.status_code} ({resp.reason})\nResponse: {resp.text}")
             raise requests.exceptions.HTTPError(resp.reason)
         else:
             sols = resp.json()["sol_keys"]
@@ -280,7 +256,7 @@ class PySpace:
                     "minimum_temperature": float(sol_info["mn"] - 32) * (5/9),
                     "maximum_temperature": float(sol_info["mx"]-32) * (5/9)
                 })
-            
+
             return result
 
     def earth_weather(self, location, ugroup="us", start_date="", end_date="", c_type="json"):
@@ -313,8 +289,8 @@ class PySpace:
         if self.weather_api_key is not None:
             for arg in [location, ugroup, start_date, end_date, c_type]:
                 if not isinstance(arg, str):
-                    raise TypeError(logger.logger("error",
-                        f"{arg} must be a string"))
+                    raise TypeError(log.error(
+                                               f"{arg} must be a string"))
 
             params = {
                 "key": self.weather_api_key,
@@ -331,15 +307,15 @@ class PySpace:
                 f"https://weather.visualcrossing.com/VisualCrossingWebServices/rest/services/timeline/{location}/{start_date}/{end_date}", params=params)
 
             if resp.status_code != 200:
-                logger.logger("error", f"Status Code: {resp.status_code} ({resp.reason})\nResponse: {resp.text}")
+                log.error(f"Status Code: {resp.status_code} ({resp.reason})\nResponse: {resp.text}")
                 raise requests.exceptions.HTTPError(resp.reason)
             else:
-                logger.logger("info", f"Status Code: {resp.status_code}\nResponse: {resp.text}")
+                log.logger(
+                    "info", f"Status Code: {resp.status_code}\nResponse: {resp.text}")
                 return resp.json()
 
         else:
-            raise TypeError(logger.logger("error","<weather_api_key> is missing."))
-
+            raise TypeError(log.error("<weather_api_key> is missing."))
 
     def earth_imagery(self, lat, lon, dim=0.025, date=None, display=True, cloud_score=False, save_as=None):
         """
@@ -396,17 +372,16 @@ class PySpace:
 
         for arg in [lat, lon, dim]:
             if not isinstance(arg, (int, float)):
-                raise TypeError(logger.logger("error", f"<{arg}> must be an int or float"))
-
+                raise TypeError(log.error(f"<{arg}> must be an int or float"))
 
         if not -90 <= lat <= 90:
-            raise ValueError(logger.logger("error","latitudes range from -90 to 90"))
+            raise ValueError(log.error("latitudes range from -90 to 90"))
         if not -180 <= lon <= 180:
-            raise ValueError("error", "longitudes range from -180 to 180")
+            raise ValueError(log.error("longitudes range from -180 to 180"))
         if date is not None:
             if not isinstance(date, (str, datetime.datetime)):
-                raise TypeError(logger.logger("error",
-                    "date must be either a string representing a date in YYYY-MM-DD format or a datetime object"))
+                raise TypeError(log.error(
+                                           "date must be either a string representing a date in YYYY-MM-DD format or a datetime object"))
             if isinstance(date, datetime.datetime):
                 date = date.strftime("%Y-%m-%d")
 
@@ -423,11 +398,12 @@ class PySpace:
             "https://api.nasa.gov/planetary/earth/imagery", params=params)
 
         if resp.status_code != 200:
-            logger.logger("error", f"Status Code: {resp.status_code} ({resp.reason})\nResponse: {resp.text}")
+            log.error(f"Status Code: {resp.status_code} ({resp.reason})\nResponse: {resp.text}")
             raise requests.exceptions.HTTPError(resp.reason)
         else:
             self.limit_remaining = resp.headers["X-RateLimit-Remaining"]
-            logger.logger("info", f"Status Code: {resp.status_code}\nResponse: {resp.text}")
+            log.logger(
+                "info", f"Status Code: {resp.status_code}\nResponse: {resp.text}")
 
             img = Image.open(io.BytesIO(resp.content))
             if save_as is not None:
@@ -444,20 +420,20 @@ class PySpace:
 
     def nasa_library(self, query="moon", nasa_id=None, mode="search"):
         """
-        
+
         """
-        
+
         if mode in ["search", "asset", "metadata", "captions"]:
             endpoint = mode
         else:
-            raise ValueError(logger.logger("error", f"<mode> must be one of the following: search, asset, metadata, captions"))
+            raise ValueError(log.error(f"<mode> must be one of the following: search, asset, metadata, captions"))
 
         resp = requests.get(f"https://images-api.nasa.gov/{endpoint}", params={
                             "q": query} if mode == "search" else nasa_id)
 
         if resp.status_code != 200:
-            logger.logger("error", f"Status Code: {resp.status_code} ({resp.reason})\nResponse: {resp.text}")
+            log.error(f"Status Code: {resp.status_code} ({resp.reason})\nResponse: {resp.text}")
             raise requests.exceptions.HTTPError(resp.reason)
         else:
-            logger.logger("info", f"Status Code: {resp.status_code}\nResponse: {resp.text}")
+            log.info(f"Status Code: {resp.status_code}\nResponse: {resp.text}")
             return (resp.json(), resp.url)
