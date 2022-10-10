@@ -1,4 +1,11 @@
 # Pyspace
+<p align="center">
+    <a href="https://github.com/CopernicusPY/pyspace/stargazers"><img src="https://img.shields.io/github/stars/CopernicusPY/pyspace?colorA=363a4f&colorB=b7bdf8&style=for-the-badge"></a>
+    <a href="https://github.com/CopernicusPY/pyspace/issues"><img src="https://img.shields.io/github/issues/CopernicusPY/pyspace?colorA=363a4f&colorB=f5a97f&style=for-the-badge"></a>
+    <a href="https://github.com/CopernicusPY/pyspace/contributors"><img src="https://img.shields.io/github/contributors/CopernicusPY/pyspace?colorA=363a4f&colorB=a6da95&style=for-the-badge"></a>
+</p>
+
+
 PySpace is an easy-to-use open-source NASA API Wrapper. Nasa developed a few apis to help the developers explore our world and even better, the space!
 
 ### What do we offer?
